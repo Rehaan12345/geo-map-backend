@@ -2,8 +2,10 @@ const express = require('express');
 const admin = require('firebase-admin');
 const cors = require('cors');
 const dotenv = require('dotenv');
-dotenv.config();
+const axios = require("axios")
+const qs = require("qs");
 
+dotenv.config();
 
 const app = express();
 const port = 3000;
@@ -80,6 +82,54 @@ app.post("/read-collection", async (req, res) => {
   } catch (error) {
     console.error('Error fetching documents:', error);
     res.status(500).json({ error: 'Failed to fetch documents: ' + error });
+  }
+})
+
+app.post("/scrape-data", async (req, res) => {
+  console.log("--------------")
+
+  // console.log(req);
+
+  const cat = req.body.data.category;
+  const loc = req.body.data.location;
+  const seAm = req.body.data.searchamount;
+
+  console.log(cat, loc, seAm);
+
+  const postData = qs.stringify({
+    category: cat,
+    location: loc,
+    searchamount: seAm,
+  });
+
+  console.log(postData);
+
+  try {
+    // const flaskResponse = await axios.post("http://localhost:5000/", postData, {
+    //   headers: {
+    //     "Content-Type": "application/x-www-form-urlencoded",
+    //   },
+    // });
+
+    const url = "http://127.0.0.1:5000/";
+
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { "Content-Type": "application/x-www-form-urlencoded",},
+      body: postData
+    });
+
+    console.log(res);
+
+    console.log(res.body)
+
+    res.json({
+      message: "Data sent to Flask successfully!",
+      data: res.body,
+    });
+  } catch (error) {
+    console.error("Error posting to Flask:", error.message);
+    res.status(500).send("Something went wrong.");
   }
 })
 
