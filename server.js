@@ -88,44 +88,43 @@ app.post("/read-collection", async (req, res) => {
 app.post("/scrape-data", async (req, res) => {
   console.log("--------------")
 
-  // console.log(req);
+  console.log(req.body);
 
   const cat = req.body.data.category;
   const loc = req.body.data.location;
   const seAm = req.body.data.searchamount;
+  const head = req.body.data.headless
 
-  console.log(cat, loc, seAm);
+  console.log(cat, loc, seAm, head);
 
   const postData = qs.stringify({
     category: cat,
     location: loc,
     searchamount: seAm,
+    headless: head
   });
 
   console.log(postData);
 
   try {
-    // const flaskResponse = await axios.post("http://localhost:5000/", postData, {
-    //   headers: {
-    //     "Content-Type": "application/x-www-form-urlencoded",
-    //   },
-    // });
 
     const url = "http://127.0.0.1:5000/";
 
-    const res = await fetch(url, {
+    const resp = await fetch(url, {
       method: 'POST',
       headers: { "Content-Type": "application/x-www-form-urlencoded",},
       body: postData
     });
 
-    console.log(res);
+    // const resp = {"message": "Hello Rehaan", "body": "Hello Big World!"}
 
-    console.log(res.body)
+    const respo = await resp.json();
+
+    console.log(respo);
 
     res.json({
       message: "Data sent to Flask successfully!",
-      data: res.body,
+      data: respo,
     });
   } catch (error) {
     console.error("Error posting to Flask:", error.message);
