@@ -34,9 +34,14 @@ const db = admin.firestore();
 // Middleware to parse JSON bodies
 app.use(express.json());
 
-app.get('/', (req, res) => {
-    res.send('Hello World!')
-  })
+app.get('/', async (req, res) => {
+  res.send('Hello World!')
+})
+
+app.get("/get-colls", async (req, res) => {
+  const collections = await db.listCollections();
+  res.send(collections.map(col => col.id));
+})
 
 // Endpoint to add a document to Firestore
 app.post('/add-document', async (req, res) => {
@@ -44,6 +49,15 @@ app.post('/add-document', async (req, res) => {
     const { data } = req.body;
     const collection = data.collection;
 
+    if (data.address) {
+      const see = await getCoordinates(data.address)
+      console.log(see)
+      const yCoord = see.lng;
+      const xCoord = see.lat;
+      const coords = [yCoord, xCoord];
+      data["coords"] = coords;
+    }
+    
     const docRef = db.collection(collection).doc();
     await docRef.set(data);
 
@@ -136,3 +150,28 @@ app.post("/scrape-data", async (req, res) => {
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
 });
+
+async function getCoordinates(address) {
+  const apiKey = process.env.MAPS_API_KEY; // Replace with your real API key
+  const encodedAddress = encodeURIComponent(address);
+  const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodedAddress}&key=${apiKey}`;
+  console.log(url);
+
+  try {
+    const response = await fetch(url);
+    const data = await response.json();
+
+    if (data.status === 'OK') {
+      const location = data.results[0].geometry.location;
+      return {
+        lat: location.lat,
+        lng: location.lng
+      };
+    } else {
+      throw new Error(`Geocoding error: ${data.status}`);
+    }
+  } catch (error) {
+    console.error('Error fetching coordinates:', error);
+    return null;
+  }
+}
