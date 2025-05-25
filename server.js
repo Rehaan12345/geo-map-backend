@@ -4,6 +4,7 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const axios = require("axios")
 const qs = require("qs");
+const mapsapi = require('./mapsapi');
 
 dotenv.config();
 
@@ -35,7 +36,10 @@ const db = admin.firestore();
 app.use(express.json());
 
 app.get('/', async (req, res) => {
-  res.send('Hello World!')
+  const test = await mapsapi.crawlWebsite("https://sproxil.com/");
+  console.log(test);
+  res.send(test);
+  // res.send('Hello World!')
 })
 
 app.get("/get-colls", async (req, res) => {
@@ -100,6 +104,21 @@ app.post("/read-collection", async (req, res) => {
 })
 
 app.post("/scrape-data", async (req, res) => {
+
+  let searchStringsArray = [];
+  let locationQuery = "";
+  let maxCrawledPlacesPerSearch = -1;
+  const language = "en";
+
+  // const input = {
+  //     "searchStringsArray": [
+  //         "tech companies"
+  //     ],
+  //     "locationQuery": "New York, USA",
+  //     "maxCrawledPlacesPerSearch": 50,
+  //     "language": "en"
+  // };
+
   console.log("--------------")
 
   console.log(req.body);
@@ -107,18 +126,43 @@ app.post("/scrape-data", async (req, res) => {
   const cat = req.body.data.category;
   const loc = req.body.data.location;
   const seAm = req.body.data.searchamount;
-  const head = req.body.data.headless
+  const head = req.body.data.headless;
 
-  console.log(cat, loc, seAm, head);
+  // console.log(cat, loc, seAm, head);
 
-  const postData = qs.stringify({
-    category: cat,
-    location: loc,
-    searchamount: seAm,
-    headless: head
-  });
+  searchStringsArray.push(cat);
+  locationQuery = loc;
+  maxCrawledPlacesPerSearch = seAm;
+  
+  const input = {
+      "searchStringsArray": searchStringsArray,
+      "locationQuery": locationQuery,
+      "maxCrawledPlacesPerSearch": maxCrawledPlacesPerSearch,
+      "language": language
+  };
 
-  console.log(postData);
+  try {
+    console.log("starting maps api run");
+    const mapsData = await mapsapi.runMap(input);
+    console.log(mapsData);
+    res.json({
+      message: "Maps api run has finished successfully!",
+      data: mapsData,
+    });
+    return 0;
+  } catch (error) {
+    console.log("failed to run maps api: " + error);
+    return -1;
+  }
+
+  // const postData = qs.stringify({
+  //   category: cat,
+  //   location: loc,
+  //   searchamount: seAm,
+  //   headless: head
+  // });
+
+  // console.log(postData);
 
   try {
 
