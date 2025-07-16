@@ -35,11 +35,16 @@ const db = admin.firestore();
 // Middleware to parse JSON bodies
 app.use(express.json());
 
+// Start the server
+app.listen(port, () => {
+  console.log(`Server running at http://localhost:${port}`);
+});
+
 app.get('/', async (req, res) => {
-  const test = await mapsapi.crawlWebsite("https://sproxil.com/");
-  console.log(test);
-  res.send(test);
-  // res.send('Hello World!')
+  // const test = await mapsapi.crawlWebsite("https://sproxil.com/");
+  // console.log(test);
+  // res.send(test);
+  res.send('Hello World!')
 })
 
 app.get("/get-colls", async (req, res) => {
@@ -61,7 +66,7 @@ app.post('/add-document', async (req, res) => {
       const coords = [yCoord, xCoord];
       data["coords"] = coords;
     }
-    
+    j
     const docRef = db.collection(collection).doc();
     await docRef.set(data);
 
@@ -190,10 +195,37 @@ app.post("/scrape-data", async (req, res) => {
   }
 })
 
-// Start the server
-app.listen(port, () => {
-  console.log(`Server running at http://localhost:${port}`);
-});
+app.post("/add-location", async (req, res) => {
+  allData = req.body.data;
+  const collection = allData.category;
+  let moreData = allData.moreData;
+  if (allData.addCoor == "add") // means the location was sent as an address not as coordinates, so we will have to change that.
+  {
+    const see = await getCoordinates(allData.location)
+    console.log(see)
+    const yCoord = see.lng;
+    const xCoord = see.lat;
+    const coords = [yCoord, xCoord];
+    allData["coords"] = coords;
+  }
+  
+  // Now have to unpack all of the moreData and store it within the allData dict.
+  if (moreData.length > 0) {
+    for (let i = 0; i < moreData.length; i++) {
+      allData[Object.keys(moreData[i])[0]] = moreData[i][Object.keys(moreData[i])[0]];
+    }
+  }
+
+  delete allData.moreData;
+
+  console.log(allData);
+
+  const docRef = db.collection(collection).doc();
+  await docRef.set(allData);
+
+  res.status(200).send('Document added successfully');
+  
+})
 
 async function getCoordinates(address) {
   const apiKey = process.env.MAPS_API_KEY; // Replace with your real API key
